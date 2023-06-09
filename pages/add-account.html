@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Accounts | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu">
+        </div>
+    </nav>
+    <section>
+        <h2>Add an account for this organisation</h2>
+        <div id="error-container"></div>
+        <div>
+            <form id="user_registration_form">
+                <div>
+                    <label>First Name</label>
+                </div>
+                <div>
+                    <input type="text" id="first_name" name="first_name"/>
+                </div>
+                <div>
+                    <label>Last Name</label>
+                </div>
+                <div>
+                    <input type="text" id="last_name" name="last_name"/>
+                </div>
+                <div>
+                    <label>Email</label>
+                </div>
+                <div>
+                    <input type="email" id="email" name="email"/>
+                </div>
+                <div>
+                    <label>User Role</label>
+                </div>
+                    <input type="radio" id="user_role_management" name="user_role"/>Management
+                    <input type="radio" id="user_role_security" name="user_role" checked/>Security
+                <div>
+                    <label>Password</label>
+                </div>
+                <div>
+                    <input type="password" id="password" name="password"/>
+                </div>
+                <div>
+                    <label>Confirm Password</label>
+                </div>
+                <div>
+                    <input type="password" id="confirm_password" name="confirm_password"/>
+                </div>
+                <div>
+                    <button type="submit" class="button1">
+                        Register
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+</body>
+<script defer>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    //user registration
+    const user_registration_form = document.getElementById('user_registration_form');
+    const userRegistrationFormHandler = (e)=>{
+        e.preventDefault();
+
+        const first_name =           document.getElementById('first_name').value;
+        const last_name =            document.getElementById('last_name').value;
+        const email =                document.getElementById('email').value;
+        const user_role_management = document.getElementById('user_role_management').checked;
+        const user_role_security =   document.getElementById('user_role_security').checked;
+        const password =             document.getElementById('password').value;
+        const confirm_password =     document.getElementById('confirm_password').value;
+
+        let selectedUserRole;
+        if(user_role_management === true){
+            selectedUserRole = "MANAGEMENT";
+        }else{
+            selectedUserRole = "SECURITY";
+        }
+        
+        axios.post('/management/register_user', {
+            first_name,
+            last_name,
+            email,
+            user_role:selectedUserRole,
+            password,
+            confirm_password
+        }).then((response)=>{
+            alert("Registration successful. The user now login with the provided credentials");
+        }).catch((err)=>{
+            const error_container = document.getElementById('error-container');
+            error_container.innerHTML = 
+                `<div>
+                <span style="color:red;">Sign Up failed. Check your credentials or use another email address</span>
+                </div>
+                <div>
+                <span style="color:red;">The two passwords must match.</span>
+                </div>`;
+        })
+    }
+    user_registration_form.addEventListener('submit', userRegistrationFormHandler)
+</script>

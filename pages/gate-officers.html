@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Accounts | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <div>
+        <h2>Gate Officers</h2>
+        Click on a gate to assign an officer
+        <div id="gate_data_container"></div>
+    </div>
+    <div id="popup" class="popup" hidden>
+        <input id="selected_gate_id" hidden/>
+        <button onclick="closePopup()" class="button1">Close</button>
+        <h2 id="selected_gate_name"></h2>
+        <div id="selected_gate_description"></div>
+        <h2>Set Officer In-Charge</h2>
+        <select id="select_officer_input">
+            
+        </select>
+        <button class="button1" onclick="setGateOfficer()">Apply setting</button>
+    </div>
+</body>
+<script>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    
+    const gate_data_container = document.getElementById('gate_data_container');
+    const selected_gate_name = document.getElementById('selected_gate_name');
+    const selected_gate_id = document.getElementById('selected_gate_id');
+    const selected_gate_description = document.getElementById('selected_gate_description');
+    const popup = document.getElementById('popup');
+    const closePopup = ()=>{
+        popup.hidden = true;
+    }
+
+    const openPopup = (element)=>{
+        //get the index of the selected gate in the gates array that the server sent
+        const gateIndex = (gate_id)=>{
+            for(let i = 0; i < gates.length; i++){
+                if(gates[i].id === gate_id){
+                    return i;
+                }
+            }
+            return -1;
+        }
+        const gate_id = Number(element.getAttribute('key'));
+        selected_gate_id.value = gate_id;
+        const gate_index = gateIndex(gate_id);
+        selected_gate_name.innerText = gates[gate_index].name;
+        selected_gate_description.innerText = gates[gate_index].description;
+        const select_officer_input = document.getElementById('select_officer_input');
+        let officer_options = '<option value="-1">NONE</option>';
+        const mapOfficerOptions = ()=>{
+            for(let i = 0; i < security_officers.length; i++){
+                officer_options += `<option value="${security_officers[i].id}">`;
+                officer_options += `${security_officers[i].first_name} ${security_officers[i].last_name}`;
+                officer_options += `</option>`;
+            }
+        }
+        mapOfficerOptions();
+        select_officer_input.innerHTML = officer_options;
+        popup.hidden = false;
+    }
+
+    const setGateOfficer = ()=>{
+        const select_officer_input = document.getElementById('select_officer_input');
+        const selected_officer_id = select_officer_input.value;
+        const gate_id = Number(selected_gate_id.value);
+        axios.post('/management/set-gate-officer',{
+            gate_officer: Number(selected_officer_id),
+            gate_id:Number(gate_id)
+        }).then(()=>{
+            alert('Updated successfully');
+            window.location.reload();
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+
+    let gates = [];
+    let security_officers = [];
+
+    const getOfficerName = (user_id) =>{
+        if(user_id === undefined || user_id === null) {
+             return 'NONE'; 
+        }
+        let officer_index;//index of officer object from the array that the server sent
+        for(let i = 0; i < security_officers.length; i++){
+            if(security_officers[i].id === user_id){
+                return `${security_officers[i].first_name} ${security_officers[i].last_name}`;
+            }
+        }
+    }
+
+    const mapGates = ()=>{
+        let html = `<table>`;
+        html += `<tr>`;
+        html +=     `<th>Gate Name</th>`;
+        html +=     `<th>Description</th>`;
+        html +=     `<th>Officer</th>`;
+        html += `</tr>`;
+        for(let i = 0; i < gates.length; i++){
+            html += `<tr key="${gates[i].id}" onclick="openPopup(this)">`;
+                html += `<td>${gates[i].name}</td>`;
+                html += `<td>${gates[i].description}</td>`;
+                html += `<td>${getOfficerName(gates[i].officer_id)}</td>`;
+            html += `</tr>`
+        }
+        html += `</table>`;
+
+        gate_data_container.innerHTML = html;
+    }
+    const getSecurityOfficers = ()=>{
+        axios.get('/management/security-officers').then((response)=>{
+            security_officers = response.data;
+            mapGates();
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    const getGateList = ()=>{
+        axios.get('/management/gate-officers-data').then((response)=>{
+            gates = response.data;
+            getSecurityOfficers();
+        }).catch((err)=>{
+            console.error(err);
+            gate_data_container.innerHTML = `<span class="error">Unable to load gate and officer information</span>`;
+        })
+    }
+    getGateList();
+    
+</script>

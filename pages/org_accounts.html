@@ -1,0 +1,168 @@
+<!-- Organisation accounts -->
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Accounts | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <div id="popup" class="popup" hidden>
+        <button class="button1" onclick="closePopup()">Close</button>
+        <div>
+            <h2 id="popup_first_name" class=""></h2>
+            <h2 id="popup_last_name" class=""></h2>
+            Role: <span id="popup_role"/>
+        </div>
+        <h2>Edit Account</h2>
+        <form id="edit_account_form">
+            <div>
+                <input hidden id="edit_user_id" value=""/>
+                <input type="checkbox" name="enable_first_name_edit" id="enable_first_name_edit"/>
+                <label for="enable_first_name_edit">Edit First Name</label>
+                <div>
+                    <input type="text" placeholder="New first name" id="new_first_name"
+                        minlength="1" maxlength="15"/>
+                </div>
+            </div>
+            <div>
+                <input type="checkbox" name="enable_last_name_edit" id="enable_last_name_edit"/>
+                <label for="enable_last_name_edit">Edit Last Name</label>
+                <div id="edit_name_container">
+                    <input type="text" placeholder="New last name" id="new_last_name"
+                        minlength="1" maxlength="15"/>
+                </div>
+            </div>
+            <div>
+                <input type="checkbox" name="enable_role_edit" id="enable_role_edit"/>
+                <label for="enable_role_edit">Edit User Role</label>
+            </div>
+            <div>
+                <label for="new_role">New Role</label>
+                <select id="new_role" name="new_role">
+                    <option value="MANAGEMENT">Management</option>
+                    <option value="SECURITY">Security</option>
+                </select>
+            </div>
+            <button class="button1" type="submit">Save Changes</button>
+        </form>
+    </div>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <div>
+        <h2>Accounts</h2>
+        <div id="accounts_container">
+
+        </div>
+    </div>
+</body>
+<script>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    //loaded accounts from the server
+    let accounts = [];
+
+    //popup window for managing user accounts
+    const popup = document.getElementById('popup');
+    const popup_first_name = document.getElementById('popup_first_name');
+    const popup_last_name = document.getElementById('popup_last_name');
+    const popup_role = document.getElementById('popup_role');
+    const edit_user_id = document.getElementById('edit_user_id');
+
+    const enablePopup = (element)=>{
+        const user_id = Number(element.getAttribute('key'));
+        //returns the index of this user inside the 
+        const getUserIndex = (userId)=>{
+            for(let i = 0; i < accounts.length; i++){
+                if(accounts[i].id === userId){
+                    return i;
+                }
+            }
+        }
+        const user_index = getUserIndex(user_id);
+        popup_first_name.innerText = accounts[user_index].first_name;
+        popup_last_name.innerText = accounts[user_index].last_name;
+        popup_role.innerText = accounts[user_index].user_role;
+        edit_user_id.innerText = user_id;
+        popup.hidden = false;
+    }
+
+    const closePopup = ()=>{
+        popup.hidden = true;
+    }
+    const accounts_container = document.getElementById('accounts_container');
+    const accountWindow = ()=>{
+
+    }
+    
+    const mapAccounts = ()=>{
+        const mapAccount = (index)=>{
+            let html = `<tr key=${accounts[index].id} onclick="enablePopup(this)">`;
+            html +=     `<td>${accounts[index].first_name}</td>`;
+            html +=     `<td>${accounts[index].last_name}</td>`;
+            html +=     `<td>${accounts[index].email}</td>`;
+            html +=     `<td>${accounts[index].user_role}</td>`;
+            html += `</tr>`;
+
+            return html;
+        }
+        let html = `<table>`;
+        html += `<tr>`;
+        html +=     `<th>First Name</th>`;
+        html +=     `<th>Last Name</th>`;
+        html +=     `<th>Email</th>`;
+        html +=     `<th>Role</th>`;
+        html += `</tr>`;
+        for(let i = 0; i < accounts.length; i++){
+            html += mapAccount(i);
+        }
+        html += `</table>`;
+        accounts_container.innerHTML = html;
+    }
+    const getAccountsData = ()=>{
+        axios.get('/management/accounts-data').then((response)=>{
+            accounts = response.data;
+            mapAccounts();
+        }).catch(()=>{
+            accounts_container.innerHTML = `<span class="error">Cannot get accounts</span>`;
+        })
+    }
+    getAccountsData();
+</script>

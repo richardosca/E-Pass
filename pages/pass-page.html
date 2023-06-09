@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Management | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <div>
+        <div style="display: flex;justify-content:center;"><h2>Pending Passes</h2></div>
+        <div>Expired passes appear red. The page automatically refreshes after 3 seconds.</div>
+        <div>Click on a Pass to delete it.</div>
+        <div id="pass_list_container">
+
+        </div>
+    </div>
+</body>
+<script>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    const pass_list_container = document.getElementById('pass_list_container');
+    const gate_ids = new Set();
+    let gateNames = [];
+    let passList = [];
+    
+    //for dealing with expired passes
+    const isExpired = (pass_date)=>{
+        //slicing to get rid of hours, minutes, seconds and milliseconds.
+        let today = new Date().toJSON().slice(0, 10);
+        //we only want to calculate expired dates using days, months and years only
+        today = new Date(today).getTime();
+        let passDate = new Date(pass_date).toJSON().slice(0, 10);
+        passDate = new Date(passDate).getTime();
+        
+        if(passDate < today){
+            return true;
+        }
+        return false;
+    }
+
+    const deletePass = (e)=>{
+        const id = Number(e.getAttribute('key'));
+        
+        const confirmed = confirm('Do you really want to delete this pass?');
+        if(confirmed === true){
+            axios.delete('/management/delete-pass/'+id).then(()=>{
+                alert('Pass deleted');
+            }).catch((err)=>{
+                console.log(err);
+            })
+        }
+    }
+
+    const getPassList = ()=>{
+        const mapPasses = ()=>{
+            const gate_ids_arr = Array.from(gate_ids);
+            const getPassRows = (index)=>{
+                let gate_id = passList[index].gate_id;
+                let gate_name_index = gate_ids_arr.indexOf(gate_id);
+                let gate_name = gateNames[gate_name_index];
+                let pass_id = passList[index].id;
+                
+                //timezone offset since Javascript converts date to UTC (GMT + 0) we are in Kenya, UTC + 3 (GMT + 3)
+                const tz_offset = 10800000;//3h in milliseconds
+                passList[index]._date = new Date( new Date(passList[index]._date).getTime() + tz_offset ).toJSON();
+                
+                //check if the pass is expired
+                const expired = isExpired(passList[index]._date);
+                //color for expired passes
+                let color = `style="background-color:#f88"`;// a bit red
+                if(expired === false){
+                    color = '';
+                }
+                
+                let html = '<tr key="'+pass_id+'" onclick="deletePass(this)" '+color+'>';
+                html +=     `<td>${passList[index]._date.slice(0, 10)}</td>`;
+                html +=     `<td>${gate_name}</td>`;
+                html +=     `<td>${passList[index].inviting_user_name}</td>`;
+                html +=     `<td>${passList[index].invited_user_email}</td>`;
+                html += `</tr>`;
+                return html;
+            }
+            let html = '<table>';
+                html += `<tr>`;
+                html +=     '<th>Date</th>';
+                html +=     '<th>Gate</th>';
+                html +=     '<th>Authorizing Officer</th>';
+                html +=     '<th>Visitor Email</th>';
+                html += '</tr>';
+            
+                for(let i = 0; i < passList.length; i++){
+                    html += getPassRows(i);
+                }
+
+            html += '</table>';
+            pass_list_container.innerHTML = html;
+        }
+
+        const getGateNames = ()=>{
+            if(gate_ids.size < 1){
+                return;
+            }
+            axios.post("/management/get-gate-names",{
+                gate_ids:Array.from(gate_ids)
+            }).then((response)=>{
+                gateNames = response.data;
+                mapPasses();
+            })
+        }
+        
+        const getGateIds = ()=>{
+            for(let i = 0; i < passList.length; i++){
+                gate_ids.add(passList[i].gate_id);
+            }
+            getGateNames();
+        }
+        
+        axios.get('/management/pending-passes').then((response)=>{
+            //console.log(response.data.length);
+            passList = response.data;
+            if(passList.length === 0){
+                pass_list_container.innerHTML = `<span>No passes in the list</span>`;
+                return;
+            }
+            getGateIds();
+        }).catch((err)=>{
+            pass_list_container.innerHTML = "<span>"
+                +"Error loading passes list"
+                +"</span>"
+        })
+    }
+    setInterval(getPassList, 3000);
+</script>

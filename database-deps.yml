@@ -1,0 +1,34 @@
+#database dependancies
+
+#we've manually linked id numbers from different tables
+#when deleting records, we will affect other tables that depend on this record
+# EXAMPLE:
+#     TABLE users(user_id integer, name varchar(15))
+#     TABLE posts(user_id integer, name varchar(255))
+
+#   When we delete a user who wrote a post, we have to delete all posts that belong to him/her
+#   Otherwise, we'll have posts that refer to a user_id that does not exist in the users table
+
+
+#REMINDER
+#Deleting a security officer's acocunt can have negative consequences,
+#   instead of deleting their accounts, the mgnt can just remove their
+#   authority over gates
+
+organisations:
+  id: [organisation_members(organisation_id),
+       gates(organisation_id)]
+  
+users:
+  id: [user_roles(user_id),
+       organisation_members(user_id),
+       pass_invitations(inviting_user_id),
+       pass_invitations(invited_user_id),
+       passes(visitor_id),
+       passes(authorizing_officer_id),
+       gates(officer_id)]
+
+gates:
+  id: [gate_officers(gate_id),
+       pass_invitations(gate_id),
+       passes(gate_id)]

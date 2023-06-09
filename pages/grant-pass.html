@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Management | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <section>
+        <div>
+            <div style="display:flex;justify-content:center;flex-direction:row;">
+                <h1>Grant a Pass</h1>
+            </div>
+            <p>Search for a user you intend to give a pass. All emails are unique 🙂</p>
+            <div>
+                <form id="search-user-form">
+                    <div>
+                        <label for="user-emai">User Email</label>
+                    </div>
+                    <div>
+                        <input type="text" name="user-email" id="user-email" placeholder="email"/>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="results-section" hidden>
+            <div><span style="font-weight:500;">Search Results</span></div> 
+            <div id="results-container" style="width:100%;display: flex;justify-content: center;">
+
+            </div>
+        </div>
+        <div id="selected_user_section" hidden style="padding-left:20vw;padding-right:20vw;">
+            <h2>Selected User</h2>
+            <div id="selected_user_container" class="two-col-grid">
+
+            </div>
+        </div>
+        <div id="gate_selection_section" hidden>
+            <h2>Select Gate</h2>
+            <form>
+                <select id="gate_input">
+                    
+                </select>
+            </form>
+        </div>
+        <div id="date_selection" hidden>
+            <h2>Validity Date</h2>
+            <input type="date" id="date_input"/>
+        </div>
+        <div id="error_container"></div>
+        <div>
+            <button onclick="submitPass()" class="button1">Submit</button>
+        </div>
+    </section>
+</body>
+<script>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+
+    const user_email_input = document.getElementById('user-email');
+    const results_section = document.getElementById('results-section');
+    const result_container = document.getElementById('results-container');
+    const selected_user_section = document.getElementById('selected_user_section');
+    const selected_user_container = document.getElementById('selected_user_container');
+    const gate_selection_section = document.getElementById('gate_selection_section');
+    //this will hold the id of the selected gate as its value
+    const gate_input = document.getElementById('gate_input');
+    let gate_list = [];
+    const date_selection = document.getElementById('date_selection');
+    const date_input = document.getElementById('date_input');
+    const error_container = document.getElementById('error_container');
+    
+
+    const post_data = {
+        invited_user_id:-1,
+        gate_id:-1,
+        _date:''
+    }
+
+    const getGateList = async()=>{
+        axios.get('/management/gate-list').then((response)=>{
+            gate_list = response.data;
+        }).catch((err)=>{
+            console.log(err);
+        })
+    }
+    getGateList();
+    
+    const setDateLimits = ()=>{
+        function addDays(date, days) {
+            var result = new Date(date);
+            result.setDate(result.getDate() + days);
+            return result;
+        }
+        let date = new Date();
+        let today = date.toLocaleDateString('en-GB').split('/').reverse().join('-');
+        let finalDate = addDays(today, 60);
+        let finalDay = finalDate.toLocaleDateString('en-GB').split('/').reverse().join('-');
+
+        date_input.setAttribute('min', today);
+        date_input.setAttribute('max', finalDay);
+    }
+    setDateLimits();
+
+    const renderSearchResults = (results)=>{
+        const renderSingleResult = (id, first_name, last_name, email)=>{
+            return '<tr key="'+String(id).toString()+'" onclick="selectUser(this)">'+
+                '<td>'+first_name.toString()+'</td>'+
+                '<td>'+last_name.toString()+'</td>'+
+                '<td>'+email.toString()+'</td>'+
+                '</tr>'
+        }       
+        
+        let html = ``;
+        html += `<table>
+                <tr>
+                    <th>First Name</th>
+                    <th>Last Name</th>
+                    <th>Email</th>
+                </tr>
+            `;
+        for(let i = 0; i < results.length; i++){
+            html += renderSingleResult(results[i].id, results[i].first_name, results[i].last_name, results[i].email);
+        }
+        html += `</table>`;
+        result_container.innerHTML = html;
+    }
+
+    const activateGateSelection = ()=>{
+        let html = '';
+
+        const mapGateOptions = ()=>{
+            for(let i = 0; i < gate_list.length; i++){
+                html += `<option value="${gate_list[i].id}">${gate_list[i].name}</option>`;
+            }
+        }
+        mapGateOptions();
+        gate_input.innerHTML = html;
+        gate_selection_section.hidden = false;
+        date_selection.hidden = false;
+    }
+
+    const selectedUser ={
+        id:-1,
+        first_name:'',
+        last_name:'',
+        email:''
+    }
+
+    const activateSelectedUserSection = ()=>{
+        let html = '<div class="mid-bold">First Name:</div><div> '+selectedUser.first_name+'</div>'
+            +'<div class="mid-bold">Last Name: </div><div> '+selectedUser.last_name+'</div>'
+            +'<div class="mid-bold">Email: </div><div> '+selectedUser.email+'</div>';
+
+        selected_user_container.innerHTML = html;
+        selected_user_section.hidden = false;
+        activateGateSelection();
+    }
+
+    const selectUser = (e)=>{
+        
+        let userId = Number(e.getAttribute('key'));
+        selectedUser.id = userId;
+        selectedUser.first_name = e.children[0].innerText;
+        selectedUser.last_name = e.children[1].innerText;
+        selectedUser.email = e.children[2].innerText;
+
+        post_data.invited_user_id = Number(userId);
+        activateSelectedUserSection();
+    }
+
+    const inputHandler = (e)=>{
+        const value = user_email_input.value;
+        if(value.length < 3){
+            results_section.hidden = true;
+            return;
+        }
+        axios.post('/search-user', {email:value}).then((response)=>{
+            results_section.hidden = false;
+            renderSearchResults(response.data);
+        })
+    }
+   
+    user_email_input.addEventListener('input', inputHandler);
+    document.getElementById('search-user-form').addEventListener('submit', (e)=>{
+        e.preventDefault();
+    })
+
+    const submitPass = ()=>{
+        post_data.gate_id = Number(gate_input.value);
+        post_data._date = date_input.value;
+        const error_msg = `<span style="color:red;">All fields must have a value.</span>`;
+        if(post_data.invited_user_id === -1 || post_data.gate_id === -1 || post_data._date === ''){
+            error_container.innerHTML = error_msg;
+            return;
+        }else{
+            error_container.innerHTML = '';
+        }
+        axios.post('/grant-pass', post_data).then((response)=>{
+            alert('Pass granted successfully');
+        }).catch(()=>{
+            alert('Something went wrong');
+        })
+    }
+</script>

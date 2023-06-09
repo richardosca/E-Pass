@@ -1,0 +1,122 @@
+#This project requires prior knowledge on HTTP, Javascript, HTML, CSS, Document Object Model
+# and asynchronous programming(async & await)
+
+
+#serial -> increases every time after a new item is added to a table
+#primary key -> a unique number for each item
+#varchar -> a character array (string). example: varchar(15) -> a string of 15 maximum characters
+
+
+
+admin login credentials:
+  email: admin@admin.com
+  password: adminpass
+
+
+
+database: Postgres
+  pool:
+    user: postgres
+    database: e_entry_system
+    password: postpass
+
+  tables:
+    #all users belong to a certain organisation
+    organisations: #added
+      id: serial primary key
+      name: varchar(30)
+      
+    #useful to have a table of role types, this adds the flexibility of adding and removing user roles
+    #deprecated
+    user_role_types: #added
+      id: serial primary key
+      role_name: varchar(50)
+
+    users: #added
+      id: serial primary key
+      first_name: varchar(15) not null
+      last_name:  varchar(15) not null
+      email: varchar(30) not null
+      #Passwords cannot be stored as plain text in a database, it has to be hashed
+      # here, we hash all passwords using the sha-256 algorithm, which produces a fixed
+      # size string of size 256 regardless of the password's size.
+      hashed_password: varchar(256)
+    user_roles: #added
+      user_id: integer
+      user_role: varchar(15)
+    
+    organisation_members: #added
+      user_id: integer,
+      organisation_id: integer
+    
+    gates: #added
+      id: serial primary key
+      organisation_id: integer
+      gate_name: varchar(30)
+      description: varchar(255)
+      officer_id: integer
+
+    #delete record after user enters organisatin's premise
+    #only management can add or delete invitations
+    passes: #added
+      inviting_user_id: integer
+      invited_user:id: integer
+      gate_id: integer
+      _date: date
+    
+    # #only applicable for registered users
+    # pass_requests:  
+    #   gate_id: integer
+    #   date: date
+    #   user_id: integer
+    #   authorizing_user: # null if no user has not yet authorized the pass
+
+    #entries made at the gate
+    #after a pass, delete the pass request
+    gate_records: #added
+      pass_id: serial primary key
+      visitor_id: integer # id of the person entering. can be null if the person is not registered
+      authorizing_officer_id: integer # the security officer who authorized the entry
+      vehicle_registration: varchar(10) # null if no vehicle used
+      gate_id: integer
+      luggage_description: varchar(200)
+      time_in: 
+      time_out:
+
+#pre-loaded data
+#only ADMIN can add, modify or delete another user's records
+user_role_types: #deprecated  
+  "ADMIN",
+  "MANAGEMENT",
+  "SECURITY",
+  "VISITOR"
+
+# TEST ACCOUNTS
+# TEST ACCOUNTS
+# TEST ACCOUNTS
+admin: #probably deprecated
+  email:    admin@admin.com
+  password: adminpass
+management:
+
+  first_name: manager
+  last_name: mgr
+  email:    mgr@mgr.com
+  password: mgrpass1
+
+  first_name: Nolan
+  last_name: Sykes
+  email:    nolan@email.com
+  password: nolanpass
+
+  first_name: Jeremiah
+  last_name: Burton
+  email:    jerburton@email.com
+  password: jerrypass
+
+security:
+  email:    secu@secu.com
+  password: secupass
+visitor:
+  email:    visit@visit.com
+  password: visitpass

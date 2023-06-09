@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Management | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <div id="organisation_name" style="text-align:left;padding-left:1rem;color:var(--themeCol1);font-weight: 600;"></div>
+    <div id="user-name" style="text-align:left;padding-left:1rem;color:var(--themeCol1);"></div>
+    <div >
+        user manual
+    </div>
+</body>
+<script defer>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    //site actions
+    const add_acc_section = document.getElementById("add_acc_section");
+    
+    
+    const organisation_name = document.getElementById('organisation_name');
+    const userNameContainer = document.getElementById('user-name');
+    let user_name = JSON.parse(localStorage.me).first_name + ' ' + JSON.parse(localStorage.me).last_name;
+    let organisationName = JSON.parse(localStorage.me).organisation_name;
+    userNameContainer.innerText = user_name;
+    organisation_name.innerText = organisationName;
+</script>

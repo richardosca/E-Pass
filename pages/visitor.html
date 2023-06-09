@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Visitor | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu">
+            <div class="nav-menu">
+                <a href="/logout">
+                    <button class="nav-btn">Logout</button>
+                </a>
+                <a href="/manage-account">
+                    <button class="nav-btn">Manage Account</button>
+                </a>
+            </div>
+        </div>
+    </nav>
+    <div id="name_container"></div>
+    <section>
+        <h2>Pending Passes</h2>
+        <div id="pending_passes_container"></div>
+    </section>
+</body>
+<script>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    //display pending Passes
+    let passes = [];
+    //we store the iDs in sets to avoid too many api calls. sets contain only unique items
+    //  passes may have common organisation iDs and gate iDs
+    let organisation_ids = new Set();
+    let gate_ids = new Set();
+    let organisation_names = [];
+    let gate_names = [];
+    const pending_passes_container = document.getElementById('pending_passes_container');
+    const getPenddingPasses = ()=>{
+        const mapPasses = ()=>{
+            if(passes.length === 0){
+                pending_passes_container.innerHTML = `<span class="mid-bold">No Passes available</span>`;
+                return;
+            }
+            let html = `<table>`;
+            html += `<tr>`;
+            html +=     `<th>Date</th>`;
+            html +=     `<th>Organisation</th>`;
+            html +=     `<th>Inviting User</th>`;
+            html +=     `<th>Gate</th>`;
+            html += `</tr>`;
+            const mapPassRows = ()=>{
+                for(let i = 0; i < passes.length; i++){
+                    let organisation_name_index = [...organisation_ids].indexOf(passes[i].organisation_id);
+                    let gate_name_index = [...gate_ids].indexOf(passes[i].gate_id);
+
+                    html += `<tr>`;
+                    html +=     `<td>${passes[i]._date.slice(0, 10)}</td>`;
+                    html +=     `<td>${organisation_names[organisation_name_index]}</td>`;
+                    html +=     `<td>${passes[i].inviting_user_name}</td>`;
+                    html +=     `<td>${gate_names[gate_name_index]}</td>`;
+                    html += `</tr>`
+                }
+            }
+            mapPassRows();
+            html += `</table>`;
+            pending_passes_container.innerHTML = html;
+        }
+        const getNamesFromIds = ()=>{
+            for(let i = 0; i < passes.length; i++){
+                organisation_ids.add(passes[i].organisation_id);
+                gate_ids.add(passes[i].gate_id);
+            }
+            axios.post('/visitor/get-pass-names', {
+                gate_ids:[...gate_ids],
+                organisation_ids:[...organisation_ids]
+            }).then((response)=>{
+                organisation_names = response.data.organisation_names;
+                gate_names = response.data.gate_names;
+                mapPasses();
+            }).catch((err)=>{
+                console.error(err);
+            })
+        }
+        axios.get('/visitor/pending-passes').then((response)=>{
+            passes = response.data;
+            getNamesFromIds();
+        }).catch((err)=>{
+            console.error(err);
+            pending_passes_container.innerHTML = `<span class="error">Cannot load passes</span>`;
+        })
+    }
+    //refresh after every 3 seconds
+    setInterval(getPenddingPasses, 5000);
+
+    //display user name
+    const name_container = document.getElementById('name_container');
+    const name = JSON.parse(localStorage.me).first_name + ' ' +JSON.parse(localStorage.me).last_name;
+    name_container.innerHTML = `<span style="color:var(--themeCol1);font-weight:600;">${name}</span>`;
+</script>

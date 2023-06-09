@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <title>Create Account | E Entry System</title>
+    <link rel="stylesheet" href="/index.css">
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <div style="display: flex;justify-content:center;">
+        <h1>Create Account</h1>
+    </div>
+        <a href="/"><button class="button1">Home</button></a>
+    <div>
+        <p>
+            The individual setting up this account will be assigned the Management role.
+            (S)He will be in charge of adding other members' accounts for this organisation.
+        </p>
+    </div>
+    <div>
+        <div id="error-container"></div>
+        <form id="sign_up_form" method="post">
+            <div>
+                <label>Organisation Name</label>
+            </div>
+            <div>
+                <input type="text" id="organisation_name" name="organisation_name"/>
+            </div>
+            <div>
+                <label>Your Fist Name</label>
+            </div>
+            <div>
+                <input type="text" id="user_first_name" name="user_first_name"/>
+            </div>
+            <div>
+                <label>Your Last Name</label>
+            </div>
+            <div>
+                <input type="text" id="user_last_name" name="user_last_name"/>
+            </div>
+            <div>
+                <label>Email</label>
+            </div>
+            <div>
+                <input type="email" id="user_email" name="user_email"/>
+            </div>
+            <div>
+                <label>Password</label>
+            </div>
+            <div>
+                <input type="password" id="password" id="password">
+            </div>
+            <div>
+                <label>Confirm Password</label>
+            </div>
+            <div>
+                <input type="password" id="confirm_password" id="confirm_password">
+            </div>
+            <div>
+                <button type="submit" class="button1">
+                    Create Account
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+<script defer>
+    const submitHandler = async(e)=>{
+        e.preventDefault();
+
+        const organisation_name = document.getElementById('organisation_name').value;
+        const user_first_name = document.getElementById('user_first_name').value;
+        const user_last_name = document.getElementById('user_last_name').value;
+        const user_email = document.getElementById('user_email').value;
+        const password = document.getElementById('password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+
+        axios.post('/sign_up_org',{
+            organisation_name,
+            user_first_name,
+            user_last_name,
+            user_email,
+            password,
+            confirm_password
+        }).then((result)=>{
+            window.location.href = "/login";
+        }).catch((err)=>{
+            const error_container = document.getElementById('error-container');
+            error_container.innerHTML = 
+                `<div>
+                <span style="color:red;">Sign Up failed. Check your credentials or use another email address</span>
+                </div>
+                <div>
+                <span style="color:red;">The two passwords must match.</span>
+                </div>`;
+        })
+    }
+    const signUpForm = document.getElementById('sign_up_form');
+    signUpForm.addEventListener('submit', submitHandler);
+</script>

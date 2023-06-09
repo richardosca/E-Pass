@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Security | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu">
+            
+        </div>
+    </nav>
+    <div id="my_name" style="text-align: left;"></div>
+    <div id="my_organisation" style="text-align: left; color: var(--themeCol1);"></div>
+    <div style="display:flex;justify-content:center;"><h1>Process Entry Pass</h1></div>
+    <div>
+        <h2>Select Gate</h2>
+        <div id="error_conatiner" class="error"></div>
+        <select id="gate_selector">
+
+        </select>
+    </div>
+    <div>
+        <h2>Select User</h2>
+        <div>
+            Only users whose Pass is valid today will be shown.
+        </div>
+        <div>
+            A maximum of 5 Passes can be shown at any given time.
+        </div>
+        <input type="text" placeholder="Search user by email" oninput="searchTodaysPasses(this)"/>
+        <div id="search_results_container"></div>
+    </div>
+    <div id="selected_pass_container" hidden style="margin: 2rem;">
+        <h2>Selected Pass</h2>
+        <div class="mid-bold">User Email</div>
+        <div id="pass_user_email"></div>
+        <div class="mid-bold">Inviting User</div>
+        <div id="pass_inviting_user_name"></div>
+        <div>
+            <input placeholder="Vehicle Registration" id="vehicle_registration"/>
+        </div>
+        <div>
+            <textarea id="luggage_description" rows="5" cols="51" maxlength="255"
+                placeholder="Luggage description"
+            ></textarea>
+        </div>
+        <div><button class="button1" onclick="postPassEntry()">Submit</button></div>
+    </div>
+</body>
+<script defer>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/security-nav-menu.html').then((response)=>{
+            document.getElementById('nav-menu').innerHTML = response.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+
+    let my_gates = [];
+    let search_results = [];
+    let selected_pass_id = -1;
+    const search_results_container = document.getElementById('search_results_container');
+    const selected_pass_container = document.getElementById('selected_pass_container');
+    const gate_selector = document.getElementById('gate_selector');
+    const getMyGates = ()=>{
+        const mapGates = ()=>{
+            if(my_gates.length === 0){
+                document.getElementById('error_conatiner').innerText = 'Could not get your gates';
+                return;
+            }
+            let html = '';
+            for(const gate of my_gates){
+                html += `<option value="${gate.id}">${gate.name}</option>`;
+            }
+            gate_selector.innerHTML = html;
+        }
+        axios.get('/security/my-gate').then((response)=>{
+            my_gates = response.data;
+            console.log(my_gates);
+            mapGates();
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+
+    const postPassEntry = ()=>{
+        const vehicle_registration = document.getElementById('vehicle_registration').value;
+        const luggage_description = document.getElementById('luggage_description').value;
+        
+        axios.post('/security/process-entry',{
+            pass_id: selected_pass_id,
+            vehicle_registration,
+            luggage_description
+        }).then((response)=>{
+            window.location.reload();
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+
+    const processSelectedPass = (e)=>{
+        const pass_id = Number(e.getAttribute('key'));
+        selected_pass_id = pass_id;
+        const pass_index = search_results.findIndex(pass => pass.id === pass_id);
+        const pass_user_email = document.getElementById('pass_user_email');
+        const pass_inviting_user_name = document.getElementById('pass_inviting_user_name');
+        pass_user_email.innerText = search_results[pass_index].invited_user_email;
+        pass_inviting_user_name.innerText = search_results[pass_index].inviting_user_name;
+
+        selected_pass_container.hidden = false;
+        selected_pass_container.scrollIntoView();
+    }
+
+    const mapSearchResults = ()=>{
+        if(search_results.length === 0){
+            search_results_container.innerHTML = 'No results found';
+            return;
+        }
+        let html = '<table>';
+        html += '<tr>';
+        html +=     '<th>User Email</th>';
+        html +=     '<th>Inviting User</th>';
+        html += '</tr>';
+        for(const result of search_results){
+            html += `<tr key="${result.id}" onclick="processSelectedPass(this)">`;
+            html +=     `<td>${result.invited_user_email}</td>`;
+            html +=     `<td>${result.inviting_user_name}</td>`;
+            html += `</tr>`;
+        }
+        html += '<table>';
+        search_results_container.innerHTML = html;
+    }
+
+    const searchTodaysPasses = (elem)=>{
+        const email = new String(elem.value);
+        const gate_id = Number(gate_selector.value);
+        
+        if(email.length > 4){
+            axios.post('/security/search-todays-passes',{
+                email,
+                gate_id
+            }).then((response)=>{
+                search_results = response.data;
+                mapSearchResults();
+            }).catch((err)=>{
+                console.error(err);
+                search_results_container.innerHTML = '<span class="error">Error searching Passes</span>';
+            })
+        }else{
+            search_results_container.innerHTML = '';
+        }
+    }
+
+    const showMyInfo = ()=>{
+        const my_name = document.getElementById('my_name');
+        const my_organisation = document.getElementById('my_organisation');
+        my_name.innerHTML = `<span class="mid-bold">${JSON.parse(localStorage.me).first_name} ${JSON.parse(localStorage.me).last_name}</span>`
+        my_organisation.innerHTML = `<span class="mid-bold">${JSON.parse(localStorage.me).organisation_name}</span>`;
+    }
+    showMyInfo();
+    getMyGates();
+</script>

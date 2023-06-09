@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<head>
+    <meta lang="en" charset="utf-8">
+    <title>Login | E Pass System</title>
+    <link rel="stylesheet" href="/index.css">
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <div>
+        <div style="display: flex;justify-content: center;">
+            <h1>E Pass Login</h1>
+        </div>
+        <a href="/"><button class="button1">Home</button></a>
+        <form style="height: 80vh; display:flex;justify-content:center;flex-direction:column; align-items: center;"
+                id="login-form"
+                action="/login" method="post">
+            <div id="error-container"></div>
+            <div>
+                <div>
+                    <label>Email</label>
+                </div>
+                <input id="email" name="email" type="email"/>
+            </div>
+            <div>
+                <div>
+                    <label>Password</label>
+                </div>
+                <input type="password" name="password" id="password"/>
+            </div>
+            <button type="submit" class="button1">
+                LOGIN
+            </button>
+        </form>
+    </div>
+</body>
+
+<script defer>
+    const submitHandler = async(e)=>{
+        e.preventDefault();
+        
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        
+        axios.post('/login', {
+            email:email,
+            password:password
+        }).then((response)=>{
+            const me = {
+                id:response.data.user_id,
+                first_name:response.data.first_name,
+                last_name:response.data.last_name,
+                user_role:response.data.user_role,
+                organisation_id:response.data.organisation_id,
+                organisation_name:response.data.organisation_name
+            }
+            
+            localStorage.setItem('me', JSON.stringify(me));
+
+            
+            switch(response.data.user_role){
+                case "ADMIN":
+                    window.location.href = "/admin";
+                    break;
+                case "MANAGEMENT":
+                    window.location.href = "/management";
+                    break;
+                case "SECURITY":
+                    window.location.href = "/security";
+                    break;
+                default:
+                    window.location.href = "/visitor";
+            }
+        }).catch((err)=>{
+            const error_container = document.getElementById('error-container');
+            error_container.innerHTML = `<span style="color:red;">Login failed</span>`;
+        })
+    }
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', submitHandler);
+</script>

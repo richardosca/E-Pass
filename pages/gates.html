@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Gates | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <div style="display:flex;justify-content:center;"><h1>Gates</h1></div>
+    <div>
+        <h2>Add Gate</h2>
+        <div id="error_container" style="color:rgba(219, 33, 0, 0.959);padding: 5vw;" hidden>
+
+        </div>
+        <form id="gate_creation_form">
+            <div><label>Gate Name</label></div>
+            <div>
+                <input type="text" id="gate_name" name="gate_name"/>
+            </div>
+            <div><label>Gate description</label></div>
+            <div>
+                <input type="text" id="gate_description" name="gate_description"
+                    min="0" maxlength="255" size="50"/>
+            </div>
+            <button class="button1" type="submit">Add</button>
+        </form>
+    </div>
+    <section>
+        <h2>Gate List</h2>
+        <div id="gate_list_container">
+            Loading...📡
+        </div>
+    </section>
+    <div class="popup" id="manage_gate" hidden>
+        <button class="button1" onclick="closeGateManagerWindow()">Close</button>
+        <div>
+            <h2 id="manage_gate_name" class=""></h2>
+            <div class="mid-bold">Description:</div>
+            <p class="text-area1" id="manage_gate_description"></p>
+        </div>
+        <h2>Edit Gate</h2>
+        <form id="edit_gate_form">
+            <div>
+                <input hidden id="edit_gate_id" value=""/>
+                <input type="checkbox" name="enable_name_edit" id="enable_name_edit"/>
+                <label for="enable_name_edit">Edit Gate Name</label>
+                <div id="edit_name_container">
+                    <input type="text" placeholder="New gate name" id="new_gate_name"
+                        minlength="1" maxlength="30"/>
+                </div>
+            </div>
+            <div>
+                <input type="checkbox" name="enable_description_edit" id="enable_description_edit"/>
+                <label for="enable_description_edit">Edit Gate Name</label>
+                <div id="edit_name_container">
+                    <input type="text" placeholder="New gate description" id="new_gate_description"
+                        size="60"/>
+                </div>
+            </div>
+            <button class="button1" type="submit">Save Changes</button>
+        </form>
+    </div>
+</body>
+<script defer>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    const gate_creation_form = document.getElementById('gate_creation_form');
+    const gate_name = document.getElementById('gate_name');
+    const gate_description = document.getElementById('gate_description');
+    const manage_gate = document.getElementById('manage_gate');
+    const edit_gate_form = document.getElementById('edit_gate_form');
+
+    const new_gate_name = document.getElementById('new_gate_name');
+    const new_gate_description = document.getElementById('new_gate_description');
+    let gate_list;
+    
+    //gate creation
+    const error_container = document.getElementById('error_container');
+    const gateCreationErrMsg = "Failed to add new gate. Gate name must not exceed 30 characters."+
+        "Gate description must not exceed 255 characters. If errors persist, contact us for help";
+
+    const gateCreationSubmitHandler = (e)=>{
+        e.preventDefault();
+        const gateName = gate_name.value;
+        const gateDescription = gate_description.value;
+        axios.post('/management/add-gate',{
+            gate_name:gateName,
+            gate_description:gateDescription
+        }).then((response)=>{
+            alert('Gate addedd successfully. This page will reload. Click OK to continue.');
+            window.location.reload();
+        }).catch(()=>{
+            error_container.innerText = gateCreationErrMsg;
+            error_container.hidden = false;
+        })
+    }
+    gate_creation_form.addEventListener('submit', gateCreationSubmitHandler);
+
+    //gate popup window
+    const closeGateManagerWindow = ()=>{
+        manage_gate.hidden = true;
+    }
+
+    const openGateManager = (e)=>{
+        const gateIndex = Number(e.getAttribute('key'));
+        manage_gate.hidden = false;
+
+        const edit_gate_id = document.getElementById('edit_gate_id');
+        const manage_gate_name = document.getElementById('manage_gate_name');
+        const manage_gate_description = document.getElementById('manage_gate_description');
+        edit_gate_id.setAttribute('key', gate_list[gateIndex].id);
+        manage_gate_name.innerText = "Gate: "+gate_list[gateIndex].name;
+        manage_gate_description.innerText = gate_list[gateIndex].description;
+    }
+
+    const editSubmitHandler = (e)=>{
+        e.preventDefault();
+        const enable_name_edit = document.getElementById('enable_name_edit').checked;
+        const enable_description_edit = document.getElementById('enable_description_edit').checked;
+        const edit_gate_id = Number(document.getElementById('edit_gate_id').getAttribute('key'));
+        
+        const post_data ={
+            gate_id:edit_gate_id,
+            edit_name:enable_name_edit,
+            edit_description:enable_description_edit,
+            new_gate_description:new_gate_description.value,
+            new_gate_name:new_gate_name.value
+        }
+
+        axios.put('/management/edit-gate', post_data).then((response)=>{
+            window.location.reload();
+        }).catch(()=>{
+            alert('Failed to update gate information');
+        })
+    }
+    edit_gate_form.addEventListener('submit', editSubmitHandler);
+
+    //show all gates
+    const gate_list_container = document.getElementById('gate_list_container');
+    
+    const fetchGateList = async()=>{
+        const mapGateList = ()=>{
+        const mapGate = (index)=>{
+            let html = `<div class="gate-container" key="${index}" onclick="openGateManager(this)">`;
+            html += `<span class="mid-bold">Gate Name: </span><span>${gate_list[index].name}</span>`;
+            html += `<div class="mid-bold">Description</div>`
+            html += `<div>${gate_list[index].description}</div>`
+            html += `</div>`;
+        return html;
+    }
+        let html = `Click on any gate to edit it<div>`;
+        for(let i = 0; i < gate_list.length; i++){
+            html += mapGate(i);
+        }
+        html += `</div>`;
+        gate_list_container.innerHTML = html;
+    }
+
+        axios.get('/management/gate-list').then((response)=>{
+            gate_list = response.data;
+            mapGateList();
+        }).catch(()=>{
+            gate_list_container.innerHTML = "Failed to load gate list😕";
+        })
+    }
+    fetchGateList();
+</script>

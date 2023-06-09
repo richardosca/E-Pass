@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Security | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu">
+            
+        </div>
+    </nav>
+    <div id="my_name" style="text-align: left;"></div>
+    <div id="my_organisation" style="text-align: left; color: var(--themeCol1);"></div>
+    <div style="display:flex;justify-content:center;"><h1>Process Exit</h1></div>
+    <div>
+        <h2>Search User by email</h2>
+        <input id="email-search" type="text" oninput="searchUser(this)" placeholder="email"/>
+    </div>
+    <div id="result_area" hidden>
+        <div style="display: flex; justify-content: center;">
+            <div id="result_container" style="width: max-content;
+                text-align: left;display: grid;grid-template-columns: auto auto;
+                margin: 2rem; box-shadow: 0 0 0.25rem #888;padding:1rem;"></div>
+        </div>
+    </div>
+</body>
+<script defer>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/security-nav-menu.html').then((response)=>{
+            document.getElementById('nav-menu').innerHTML = response.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+    const result_area = document.getElementById('result_area');
+    const result_container = document.getElementById('result_container');
+    
+    let searchResult ={
+        id:-1,
+        visitor_id:0,
+        first_name:'',
+        last_name:'',
+        email:'',
+        luggage_description:'',
+        vehicle_registration:''
+    }
+
+    const showSearchResult = ()=>{
+        let html = `<div><span class="mid-bold">First Name</span></div>`;
+        html += `<div>${searchResult.first_name}</div>`;
+        html += `<div><span class="mid-bold">Last Name</span></div>`;
+        html += `<div>${searchResult.last_name}</div>`;
+        html += `<div><span class="mid-bold">Email</span></div>`;
+        html += `<div>${searchResult.email}</div>`;
+        html += `<div><span class="mid-bold">Vehicle Registration</span></div>`;
+        html += `<div>${searchResult.vehicle_registration}</div>`;
+        html += `<div><span class="mid-bold">Luggage Description</span></div>`;
+        html += `<div>${searchResult.luggage_description}</div>`;
+        html += `<div></div>`;
+        html += `<button class="button1" onclick="submitExit()">Process Exit</button>`;
+        result_container.innerHTML = html;
+        result_area.hidden = false;
+    }
+
+    const searchUser = (elem)=>{
+        const email = elem.value;
+        if(email.length < 3){
+            result_area.hidden = true;
+            return;
+        }
+        axios.post('/security/search-pending-exit',{
+            email
+        }).then((response)=>{
+            if(response.data.id === undefined){
+                if(response.data === 'not-found'){
+                    result_container.innerHTML = `<span class="mid-bold">No results found</span>`;
+                    result_area.hidden = false;
+                    return;
+                }
+                result_area.hidden = true;
+                return;
+            }
+            searchResult.id = response.data.id;
+            searchResult.visitor_id = response.data.visitor_id;
+            searchResult.first_name = response.data.user_data.first_name;
+            searchResult.last_name = response.data.user_data.last_name;
+            searchResult.email = response.data.user_data.email;
+            searchResult.luggage_description = response.data.luggage_description;
+            searchResult.vehicle_registration = response.data.vehicle_registration;
+            showSearchResult();
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+
+    const submitExit = ()=>{
+        axios.post('/security/process-exit',{
+            gate_record_id:searchResult.id
+        }).then((res)=>{
+            alert('Exit processed successfully.');
+            window.location.reload();
+        }).catch((err)=>{
+            console.error(err);
+            alert('Could not process Exit');
+        })
+    }
+
+    let my_gates = [];
+    const getMyGates = ()=>{
+        axios.get('/security/my-gate').then((response)=>{
+            my_gates = response.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+
+    const showMyInfo = ()=>{
+        const my_name = document.getElementById('my_name');
+        const my_organisation = document.getElementById('my_organisation');
+        my_name.innerHTML = `<span class="mid-bold">${JSON.parse(localStorage.me).first_name} ${JSON.parse(localStorage.me).last_name}</span>`
+        my_organisation.innerHTML = `<span class="mid-bold">${JSON.parse(localStorage.me).organisation_name}</span>`;
+    }
+    showMyInfo();
+    getMyGates();
+</script>

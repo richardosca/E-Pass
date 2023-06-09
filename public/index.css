@@ -1,0 +1,266 @@
+:root{
+    --navbarHeight:2.3rem;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    text-align: center;
+    --themeCol1:#245ca3;
+    --themeCol2:#f68220;
+}
+
+body{
+    margin:0;
+}
+
+nav{
+    position: sticky;
+    background-image: linear-gradient(165deg, #245ba3c0, #f68020c0);
+    padding:1rem;
+    top:0;
+    z-index: 20;
+    backdrop-filter: blur(2px);
+    
+}
+
+.nav-main{
+    display: flex;
+    justify-content: space-between;
+    font-size: calc(var(--navbarHeight) * 0.4);
+}
+
+.menu-btn{
+    height:calc(var(--navbarHeight) * 0.65);
+    width:calc(var(--navbarHeight) * 0.65);
+}
+
+.menu-btn:hover{
+    cursor: pointer;
+    background-color: #0000000c;
+}
+
+.nav-menu{
+    display: grid;
+    grid-template-columns: auto auto;
+    padding:1rem;
+    width:70%;
+    border-top:1px solid #8888;
+    margin:10px;
+    animation-name: menu-open;
+    animation-duration: 300ms;
+}
+
+@keyframes menu-open {
+    0%{transform: translateY(-100%);opacity: 0;}
+    50%{transform: translateY(-40%);opacity: 0;}
+    100%{transform: translateY(0);opacity: 1;}
+}
+
+.nav-btn{
+    background:#8884;
+    margin:0.25rem;
+    font-size: 1rem;
+    border:none;
+    outline: none;
+    color:white;
+    transition-duration: 500ms;
+    width:100%;
+    margin:2px;
+    border-left: 2px solid #fff;
+}
+
+.nav-btn:hover{
+    background-color: rgb(136, 136, 136);
+    cursor: pointer;
+    transform: scale(1.03);
+}
+
+form > *{
+    margin:10px;
+}
+
+.button1{
+    background-color: white;
+    border:1px solid #245ca3;
+    max-width: fit-content;
+    color:#245ca3;
+    font-size: 1.2rem;
+    /* border-radius: 0.6rem; */
+    transition-duration: 400ms;
+    font-size: 1rem;
+    margin:1rem;
+}
+
+.button1:hover{
+    background-color: #245ca3;
+    color:white;
+    cursor: pointer;
+}
+
+.button2{
+    background-color: rgba(255, 255, 255, 0.445);
+    border:1px solid #245ba385;
+    max-width: fit-content;
+    color:#245ca3;
+    font-size: 1.2rem;
+    border-radius: 0.6rem;
+    transition-duration: 400ms;
+    font-size: 1rem;
+}
+
+.button2:hover{
+    background-color: #245ca3;
+    color:white;
+    cursor: pointer;
+}
+
+input{
+    font-size: 1.1rem;
+    text-align: center;
+    color:#14335c;
+    border-style: none;
+    border-bottom: 1px solid #f6802088;
+    padding:0.25rem;
+    margin: 1rem;
+    transition-duration: 200ms;
+}
+
+input:focus{
+    outline: none;
+    border-bottom: 2px solid #f68220;
+}
+
+h1{
+    background-color: rgba(138, 138, 138, 0.301);
+    color:#245ca3;
+    backdrop-filter: blur(2px);
+    padding:0.5rem;
+    border-radius: 0.5rem;
+    max-width: fit-content;
+}
+
+h2{
+    color:#14335c;
+    margin:0.5rem;
+}
+
+a{
+    text-decoration: none;
+    color:white;
+}
+
+p{
+    margin:10vw;
+    text-align: left;
+}
+
+.sections-container{
+    display:inline-flex;
+    flex-direction: row;
+    overflow: scroll;
+}
+
+section{
+    height:90vh;
+    width:90vw;
+    padding-top: 4rem;
+    margin-left: 5vw;
+}
+
+label{
+    font-weight: 600;
+}
+
+tr{
+    margin:0.25rem;
+    background-color: #016efd2d;
+}
+
+tr:hover{
+    cursor: pointer;
+    background-color: #016efd11;
+}
+
+table{
+    width:90%;
+    margin:5%;
+}
+
+.mid-bold{
+    font-weight: 600;
+    margin-left: 1rem;
+    margin-right: 1rem;
+}
+
+.gate-container{
+    padding:2vw;
+    cursor: pointer;
+    margin-left:5vw;
+    margin-right: 5vw;
+    transition-duration: 400ms;
+    box-shadow: 0 0 0.25rem var(--themeCol2);
+    margin-top: 1rem;
+}
+
+.gate-container:hover{
+    cursor: pointer;
+    box-shadow: 0 0 0.5rem var(--themeCol1);
+}
+
+.popup{
+    position: fixed;
+    left: 5vw;
+    top:5vh;
+    width:80vw;
+    height:80vh;
+    z-index: 15;
+    background-color: #245ba365;
+    backdrop-filter: blur(2px);
+    padding:2rem;
+    z-index: 30;
+    animation-name: popup-open;
+    animation-duration: 100ms;
+}
+
+@keyframes popup-open {
+    0%{opacity: 0; transform: scale(0.5);}
+    100%{opacity: 1; transform: scale(1);}
+}
+
+.text-area1{
+    font-size: 1rem;
+    padding:1rem;
+    margin:0.5rem;
+}
+
+th{
+    background-color: wheat;
+}
+th:hover{
+    background-color: wheat;
+    cursor: auto;
+}
+
+td{
+    text-align: left;
+    padding:5px;
+}
+
+.error{
+    color:red;
+}
+
+select{
+    padding: 0.25rem;
+    margin:0.5rem;
+}
+
+textarea{
+    resize: none;
+    border: 1px solid var(--themeCol1);
+    padding: 0.25rem;
+    margin:1rem;
+    text-align: left;
+}
+textarea:focus{
+    outline: 1px solid #0000;
+    border:1px solid var(--themeCol1);
+    box-shadow: 0 0 1rem var(--themeCol1);
+}

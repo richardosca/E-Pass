@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <title>Create Account | E Entry System</title>
+    <link rel="stylesheet" href="/index.css">
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <div style="display: flex;justify-content:center;">
+        <h1>Create Account</h1>
+    </div>
+    <a href="/"><button class="button1">Home</button></a>
+    <div>
+        <p>
+            <span style="font-weight: 600; color:var(--themeCol1)">REMINDER </span> This is not an organisation account. User
+            accounts for organisations can only be created by the respective organisation managers.
+        </p>
+    </div>
+    <div>
+        <div id="error-container">
+
+        </div>
+        <form id="login-form">
+            <div>
+                <label>Your Fist Name</label>
+            </div>
+            <div>
+                <input type="text" id="first_name" name="first_name"/>
+            </div>
+            <div>
+                <label>Your Last Name</label>
+            </div>
+            <div>
+                <input type="text" id="last_name" name="last_name"/>
+            </div>
+            <div>
+                <label>Email</label>
+            </div>
+            <div>
+                <input type="email" id="email" name="email"/>
+            </div>
+            <div>
+                <label>Password</label>
+            </div>
+            <div>
+                <input type="password" id="password" id="password">
+            </div>
+            <div>
+                <label>Confirm Password</label>
+            </div>
+            <div>
+                <input type="password" id="confirm_password" id="confirm_password">
+            </div>
+            <div>
+                <button type="submit" class="button1">
+                    Create Account
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+<script defer>
+    const submitHandler = async(e)=>{
+        e.preventDefault();
+        
+        const first_name = document.getElementById('first_name').value;
+        const last_name = document.getElementById('last_name').value;
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const confirm_password = document.getElementById('confirm_password').value;
+        
+        axios.post('/sign_up', {
+            first_name,
+            last_name,
+            email,
+            password,
+            confirm_password
+        }).then((response)=>{
+            //no error occured
+            console.log(response);
+            window.location.href = '/login';
+        }).catch((err)=>{
+            const error_container = document.getElementById('error-container');
+            error_container.innerHTML = 
+                `<div>
+                <span style="color:red;">Sign Up failed. Check your credentials or use another email address</span>
+                </div>
+                <div>
+                <span style="color:red;">The two passwords must match.</span>
+                </div>`;
+        })
+    }
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', submitHandler);
+</script>

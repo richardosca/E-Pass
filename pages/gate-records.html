@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" lang="en">
+    <link rel="stylesheet" href="/index.css">
+    <title>Gates | E Entry System</title>
+    <script src="/lib/axios.min.js"></script>
+</head>
+<body>
+    <script>
+        function loadIcon(containerId, iconHref){
+            const iconContainer = document.getElementById(containerId);
+                        let Icon;
+                        fetch(iconHref).then((value)=>{
+                            Icon = value.text().then(Icon =>{
+                                iconContainer.innerHTML = Icon;
+                            });
+                        })
+        }
+    </script>
+    <nav>
+        <div class="nav-main">
+            <span style="color: white; background-color: #fff4; backdrop-filter: blur(2px); border-radius: 0.5rem;
+                            padding:0.5rem">
+                E Pass System
+            </span>
+            <div id="menu-btn" class="menu-btn" onclick="toggleNavMenu()">
+                <script>
+                    loadIcon('menu-btn', '/icons/menu-btn.svg');
+                </script>
+            </div>
+        </div>
+        <div hidden id="nav-menu"></div>
+    </nav>
+    <div style="display:flex;justify-content:center;"><h1>Gate Records</h1></div>
+    <div id="error_container">Loading ... </div>
+    <div>
+        <div>The date format is DD/MM/YYYY HH:MM:SS (24Hr format)</div>
+        <div>Select filter type</div>
+        <select id="filter_type">
+            <option value="date">Date Filter</option>
+            <option value="gate">Gate Filter</option>
+            <option value="person">Person</option>
+        </select>
+        <div><label>Filter Records by the selected option</label></div>
+        <div>
+            <input placeholder="Type to search" id="filter_input" oninput="applyFilter(this)" size="40"/>
+        </div>
+        <div id="records_container">
+
+        </div>
+    </div>
+</body>
+<script defer>
+    //navbar
+    const navMenu = document.getElementById('nav-menu');
+    let navMenuOpen = false;
+    const getNavMenu = ()=>{
+        axios.get('/management-nav-menu.html').then((res)=>{
+            document.getElementById('nav-menu').innerHTML = res.data;
+        }).catch((err)=>{
+            console.error(err);
+        })
+    }
+    getNavMenu();
+    const toggleNavMenu = ()=>{
+        navMenuOpen = !navMenuOpen;
+        navMenu.hidden = !navMenuOpen;
+    }
+
+
+    //sets contain only unique items, we want to keep the ids then request for names of the bearers of
+    //  these ids from the server
+    let user_iDs = new Set();
+    let gate_iDs = new Set();
+    let gate_records = [];
+    let user_data = [];
+    let gate_data = [];
+    const error_container = document.getElementById('error_container');
+    
+    const records_container = document.getElementById('records_container');
+    const filter_type = document.getElementById('filter_type');
+    
+    /*
+        we'll store the search results in a set since when searching for user names, we may have multiple matches on the
+        same gate record, 
+            example: when searchin the name elon, while typing el, multiple names might contain the character
+                     sequence el such as Bramwel. in this case, applyPersonFilter would detect multiple
+                     name matches on the same gate record. if we were using an array, we would
+                     add the index of the matching gate record into that array, but for sets, even if we
+                     add the gate record id, only one copy of that id would exist
+    */
+    let filter_results = new Set();//indexes of gate records in gate_records array that pass the filter
+
+    const iCompare = (str1, str2)=>{    //case insensitive method for comparing gate names and user names
+        const string1 = new String(str1).toLowerCase();
+        const string2 = new String(str2).toLowerCase();
+        if(string1.includes(string2) === true){
+            return true;
+        }
+        return false;
+    }
+
+    const mapFilterResults = ()=>{
+        if(filter_results.size === 0){
+            records_container.innerHTML = `No matching results found`;
+            return;
+        }
+        let html = `<table>`;
+        html += `<tr>`;
+        html +=     `<th>Gate</th>`;
+        html +=     `<th>Gate Officer</th>`;
+        html +=     `<th>Inviting User</th>`;
+        html +=     `<th>Invited User</th>`;
+        html +=     `<th>Vehicle</th>`;
+        html +=     `<th>Luggage Description</th>`;
+        html +=     `<th>Time In</th>`;
+        html +=     `<th>Time Out</th>`;
+        html += `</tr>`;
+        for(let r = 0; r < filter_results.size; r++){
+            let gate_record_index = [...filter_results][r];
+            const gate_id = gate_records[gate_record_index].gate_id;
+            const gate_name_index = gate_data.findIndex(gate => gate.id === gate_id);
+            const gate_name = gate_data[gate_name_index].name;
+
+            const gate_officer_name_index = user_data.findIndex(user => user.id === gate_records[gate_record_index].authorizing_officer_id);
+            const gate_officer_name = user_data[gate_officer_name_index].first_name + ' ' + user_data[gate_officer_name_index].last_name;
+            
+            const inviting_user_name_index = user_data.findIndex(user => user.id === gate_records[gate_record_index].inviting_user);
+            const inviting_user_name = user_data[inviting_user_name_index].first_name +' '+user_data[inviting_user_name_index].last_name;
+
+            const invited_user_name_index = user_data.findIndex(user => user.id === gate_records[gate_record_index].visitor_id);
+            const invited_user_name = user_data[invited_user_name_index].first_name +' '+user_data[invited_user_name_index].last_name;
+            
+            html += `<tr key="${gate_records[gate_record_index].id}">`;
+            html +=     `<td>${gate_name}</td>`;
+            html +=     `<td>${gate_officer_name}</td>`;
+            html +=     `<td>${inviting_user_name}</td>`;
+            html +=     `<td>${invited_user_name}</td>`;
+            html +=     `<td>${gate_records[gate_record_index].vehicle_registration}</td>`;
+            html +=     `<td>${gate_records[gate_record_index].luggage_description}</td>`;
+            html +=     `<td>${gate_records[gate_record_index].time_out}</td>`;
+            html +=     `<td>${gate_records[gate_record_index].time_out}</td>`;
+            html += `</tr>`
+        }
+        html += `</table>`;
+        records_container.innerHTML = html;
+    }
+    const applyFilter = (e)=>{
+        const filter_value = e.value;
+        filter_results = new Set();
+        if(filter_value === ''){     //no filter typed
+            records_container.innerHTML = `No filter value typed.`;
+            return;
+        }
+        const applyGateFilter = ()=>{
+            for(let i = 0; i < gate_data.length; i++){
+                let gate_id = gate_data[i].id;
+                let gate_name = gate_data[i].name;
+                if(iCompare(gate_name, filter_value) === true){
+                    for(let g = 0; g < gate_records.length; g++){
+                        if(gate_records[g].gate_id === gate_id){
+                            filter_results.add(g);
+                        }
+                    }
+                }
+            }
+            mapFilterResults();
+        }
+        const applyDateFilter = ()=>{
+            for(let i = 0; i < gate_records.length; i++){
+                if(gate_records[i].time_in.includes(filter_value)){
+                    filter_results.add(i);
+                }
+            }
+            mapFilterResults();
+        }
+        const applyPersonFilter = ()=>{
+            for(let i = 0; i < user_data.length; i++){
+                let user_id = user_data[i].id;
+                if(iCompare(user_data[i].first_name, filter_value) === true
+                || iCompare(user_data[i].last_name, filter_value) === true){
+                    for(let g = 0; g < gate_records.length; g++){
+                        if(gate_records[g].authorizing_officer_id === user_id
+                            || gate_records[g].inviting_user === user_id
+                            || gate_records[g].visitor_id === user_id){
+                                filter_results.add(g);
+                            }
+                    }
+                }
+            }
+            mapFilterResults();
+        }
+        switch(filter_type.value){
+            case 'date':
+                applyDateFilter();
+                break;
+            case 'gate':
+                applyGateFilter();
+                break;
+            default:     //person
+                applyPersonFilter();
+                break;
+        }
+    }
+
+    const getNames = ()=>{
+        //the gate records will come with some ids, we need to get the names of those entities
+        //record_index -> index of record in gate_records array
+        const getGateNames = ()=>{
+            const gate_ids_arr = [...gate_iDs];
+            axios.post('/management/get-gate-names',{
+                gate_ids:gate_ids_arr
+            }).then((res)=>{
+                for(let i = 0; i < res.data.length; i++){
+                    gate_data.push({
+                        id:gate_ids_arr[i],
+                        name:res.data[i]
+                    })
+                }
+            }).catch(err=>{
+                console.error('cannot get gates data');
+                console.error(err);
+            })
+        }
+
+        const getUserNames = ()=>{
+            const user_ids_array = [...user_iDs];
+            for(let i = 0; i < user_iDs.size; i++){
+                const id = user_ids_array[i];
+                axios.get('/management/account/'+id).then((response)=>{
+                    user_data.push({id, ...response.data});
+                }).catch((err)=>{
+                    console.log('cannot get user details of user with id '+id);
+                    console.error(err);
+                })
+            }
+        }
+        
+        for(let i = 0; i < gate_records.length; i++){
+            user_iDs.add(gate_records[i].authorizing_officer_id);
+            user_iDs.add(gate_records[i].visitor_id);
+            user_iDs.add(gate_records[i].inviting_user);
+            gate_iDs.add(gate_records[i].gate_id);
+        }
+        getUserNames();
+        getGateNames();
+        error_container.innerHTML = '';
+    }
+    const getGateRecords = ()=>{
+        //format the dates to a human-friendly format
+        const formatDates = ()=>{
+            for(let i = 0; i < gate_records.length; i++){
+                gate_records[i].time_in = new Date(gate_records[i].time_in).toLocaleString('en-UK');
+                gate_records[i].time_out = new Date(gate_records[i].time_out).toLocaleString('en-UK');
+            }
+        }
+        axios.get('/management/gate_records').then((response)=>{
+            gate_records = response.data;
+            formatDates();
+            getNames();
+        }).catch((err)=>{
+            error_container.innerHTML = `<span class="error">Cannot fetch gate records</span>`;
+        })
+    }
+    getGateRecords();
+</script>
